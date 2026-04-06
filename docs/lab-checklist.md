@@ -82,3 +82,37 @@ Choose 3-5 critical vulnerabilities and fix them:
 - [ ] Re-ran scans to verify fixes
 
 **Reference solutions**: `lab/solutions/app_fixed.py`
+
+## Part D: Docker Security Review (Session 4)
+
+```bash
+cd lab/vulnerable-app
+```
+
+Review `Dockerfile` and `docker-compose.yml`:
+
+| # | Vulnerability | File | Found? |
+|---|--------------|------|--------|
+| 1 | Unpinned image (`python:latest` / `postgres:latest`) | Dockerfile | [ ] |
+| 2 | Running as root (no USER directive) | Dockerfile | [ ] |
+| 3 | No .dockerignore — .git/.env could enter image | Dockerfile | [ ] |
+| 4 | No HEALTHCHECK | Dockerfile | [ ] |
+| 5 | CMD shell form instead of exec form | Dockerfile | [ ] |
+| 6 | No multi-stage build — build tools in final image | Dockerfile | [ ] |
+| 7 | No resource limits (memory, CPU) | docker-compose.yml | [ ] |
+| 8 | Secrets as plaintext environment variables | docker-compose.yml | [ ] |
+| 9 | Ports bound to 0.0.0.0 (all interfaces) | docker-compose.yml | [ ] |
+| 10 | Database port exposed to host | docker-compose.yml | [ ] |
+| 11 | Redis without password authentication | docker-compose.yml | [ ] |
+| 12 | No network segmentation | docker-compose.yml | [ ] |
+| 13 | Host volume mounts giving container host access | docker-compose.yml | [ ] |
+| 14 | No `no-new-privileges` security option | docker-compose.yml | [ ] |
+
+**Score**: ___ / 14 found
+
+- [ ] Identified all Dockerfile vulnerabilities
+- [ ] Identified all docker-compose.yml vulnerabilities
+- [ ] Reviewed fixed versions in `lab/solutions/`
+- [ ] Understood Docker secrets vs environment variables
+- [ ] Understood multi-stage build benefits
+- [ ] Understood network segmentation in compose

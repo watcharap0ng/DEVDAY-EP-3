@@ -1,0 +1,14 @@
+# Fixed .dockerignore — Prevent sensitive files from entering the image
+.git
+.gitignore
+.env
+.env.*
+*.md
+secrets/
+*.pyc
+__pycache__/
+.pytest_cache/
+.vscode/
+.idea/
+*.log
+node_modules/

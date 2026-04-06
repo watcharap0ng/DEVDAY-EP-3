@@ -682,6 +682,124 @@ gitleaks detect --source .</code></pre>
     <br>
     <p style="font-size:0.8em; color:#94a3b8;">Solutions: <code>lab/solutions/</code></p>
   </section>
+
+  <!-- PART D: DOCKER SECURITY -->
+  <section>
+    <h2>Part D: Docker Security Review</h2>
+    <p class="subtitle">10 minutes</p>
+    <br>
+    <p>ตรวจสอบ <code>Dockerfile</code> และ <code>docker-compose.yml</code> ใน <code>lab/vulnerable-app/</code></p>
+    <br>
+    <p>ช่องโหว่ที่ซ่อนไว้:</p>
+    <div style="display:flex; gap:0.5em; flex-wrap:wrap; justify-content:center;">
+      <span class="badge badge-critical">root container</span>
+      <span class="badge badge-critical">secrets in plaintext</span>
+      <span class="badge badge-high">no resource limits</span>
+      <span class="badge badge-high">no healthcheck</span>
+      <span class="badge badge-high">unpinned image</span>
+      <span class="badge badge-medium">debug port exposed</span>
+      <span class="badge badge-medium">DB port to host</span>
+      <span class="badge badge-medium">no auth on Redis</span>
+      <span class="badge badge-low">no .dockerignore</span>
+      <span class="badge badge-low">shell form CMD</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Dockerfile Vulnerabilities</h2>
+    <br>
+    <table>
+      <thead><tr><th>#</th><th>Vulnerability</th><th>Risk</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><code>FROM python:latest</code> — ไม่ pin version</td><td class="highlight-yellow">Medium</td></tr>
+        <tr><td>2</td><td>ไม่มี <code>USER</code> — รันเป็น root</td><td class="highlight-red">Critical</td></tr>
+        <tr><td>3</td><td><code>COPY .</code> — ไม่มี .dockerignore</td><td class="highlight-yellow">Medium</td></tr>
+        <tr><td>4</td><td>ไม่มี <code>HEALTHCHECK</code></td><td class="highlight-yellow">High</td></tr>
+        <tr><td>5</td><td><code>CMD python app.py</code> — shell form</td><td class="highlight-cyan">Low</td></tr>
+        <tr><td>6</td><td>ไม่มี multi-stage build</td><td class="highlight-yellow">Medium</td></tr>
+        <tr><td>7</td><td>ไม่มี resource limits</td><td class="highlight-yellow">High</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>docker-compose.yml Vulnerabilities</h2>
+    <br>
+    <table>
+      <thead><tr><th>#</th><th>Vulnerability</th><th>Risk</th></tr></thead>
+      <tbody>
+        <tr><td>8</td><td>Secrets เป็น plaintext env vars</td><td class="highlight-red">Critical</td></tr>
+        <tr><td>9</td><td><code>ports: "5000:5000"</code> — bind all interfaces</td><td class="highlight-yellow">High</td></tr>
+        <tr><td>10</td><td>DB port 5432 exposed to host</td><td class="highlight-yellow">High</td></tr>
+        <tr><td>11</td><td>Redis ไม่มี <code>requirepass</code></td><td class="highlight-red">Critical</td></tr>
+        <tr><td>12</td><td>ไม่มี network segmentation</td><td class="highlight-yellow">High</td></tr>
+        <tr><td>13</td><td>Host volume mounts <code>./uploads:/app</code></td><td class="highlight-yellow">Medium</td></tr>
+        <tr><td>14</td><td>ไม่มี <code>no-new-privileges</code></td><td class="highlight-yellow">High</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>Secure Dockerfile — Key Fixes</h2>
+    <pre class="code-good"><code class="dockerfile"># Pin version + use slim image
+FROM python:3.12-slim-bookworm
+
+# Non-root user
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Multi-stage build
+FROM python:3.12-slim-bookworm AS builder
+COPY --from=builder /root/.local /home/appuser/.local
+
+# Healthcheck
+HEALTHCHECK CMD python -c "..."
+
+# Exec form
+CMD ["python", "app.py"]
+
+# Run as non-root
+USER appuser</code></pre>
+  </section>
+
+  <section>
+    <h2>Secure docker-compose.yml — Key Fixes</h2>
+    <div class="two-col">
+      <div>
+        <h3>Secrets</h3>
+        <pre><code class="yaml">secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+
+services:
+  app:
+    secrets:
+      - db_password
+    environment:
+      - DB_PASSWORD_FILE=/run/secrets/db_password</code></pre>
+      </div>
+      <div>
+        <h3>Hardening</h3>
+        <pre><code class="yaml">services:
+  app:
+    ports:
+      - "127.0.0.1:5000:5000"
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "python", "-c", "..."]
+
+networks:
+  backend:
+    internal: true</code></pre>
+      </div>
+    </div>
+  </section>
 </section>
 
 <!-- ============================================================ -->
@@ -774,6 +892,7 @@ jobs:
           <li>Semgrep (SAST)</li>
           <li>Syft + Dependency-Track (SCA)</li>
           <li>Gitleaks (Secrets)</li>
+          <li>Docker security (Dockerfile + compose)</li>
           <li>CI/CD integration</li>
         </ul>
       </div>
