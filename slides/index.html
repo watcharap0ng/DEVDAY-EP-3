@@ -192,23 +192,23 @@
 
   <!-- OWASP INTRO -->
   <section>
-    <h2>OWASP Top 10 (2021)</h2>
+    <h2>OWASP Top 10 (2025)</h2>
     <p class="subtitle">10 ความเสี่ยงด้านความปลอดภัยที่สำคัญที่สุดสำหรับ Web Applications</p>
     <br>
     <div class="two-col" style="font-size:0.85em;">
       <div>
         <p><span class="highlight-red">A01</span> Broken Access Control</p>
-        <p><span class="highlight-red">A02</span> Cryptographic Failures</p>
-        <p><span class="highlight-red">A03</span> Injection</p>
-        <p><span class="highlight-yellow">A04</span> Insecure Design</p>
-        <p><span class="highlight-yellow">A05</span> Security Misconfiguration</p>
+        <p><span class="highlight-red">A02</span> Security Misconfiguration</p>
+        <p><span class="highlight-red">A03</span> Supply Chain Failures</p>
+        <p><span class="highlight-yellow">A04</span> Cryptographic Failures</p>
+        <p><span class="highlight-yellow">A05</span> Injection</p>
       </div>
       <div>
-        <p><span class="highlight-yellow">A06</span> Vulnerable Components</p>
+        <p><span class="highlight-yellow">A06</span> Insecure Design</p>
         <p><span class="highlight-yellow">A07</span> Auth Failures</p>
         <p><span class="highlight-cyan">A08</span> Integrity Failures</p>
-        <p><span class="highlight-cyan">A09</span> Logging Failures</p>
-        <p><span class="highlight-cyan">A10</span> SSRF</p>
+        <p><span class="highlight-cyan">A09</span> Logging & Alerting</p>
+        <p><span class="highlight-cyan">A10</span> Exceptional Conditions</p>
       </div>
     </div>
   </section>
@@ -241,11 +241,94 @@
 app.get('/api/user/:id', (req, res) => {
     return db.getUser(req.params.id);
 });</code></pre>
+    <br>
+    <h3>SSRF (เพิ่มใน 2025)</h3>
+    <pre class="code-bad"><code class="python"># Bad: server fetch URL อะไรก็ได้
+resp = requests.get(user_provided_url)
+# Attacker: http://169.254.169.254 → AWS metadata!</code></pre>
+    <pre class="code-good"><code class="python"># Good: allowlist + block internal IPs
+ALLOWED_DOMAINS = ["api.example.com"]
+parsed = urlparse(user_provided_url)
+if parsed.hostname not in ALLOWED_DOMAINS:
+    raise ValueError("URL not allowed")</code></pre>
   </section>
 
   <!-- A02 -->
   <section>
-    <h2>A02: Cryptographic Failures</h2>
+    <h2>A02: Security Misconfiguration</h2>
+    <p>ตั้งค่าไม่ถูกต้อง ปล่อย default settings เปิด features ไม่จำเป็น</p>
+    <br>
+    <div class="two-col">
+      <div>
+        <h3>ตัวอย่างช่องโหว่</h3>
+        <ul>
+          <li><code>DEBUG=True</code> ใน production — stack trace รั่ว</li>
+          <li>Default credentials: <code>admin/admin</code></li>
+          <li>S3 bucket public, directory listing</li>
+          <li>Missing security headers</li>
+        </ul>
+      </div>
+      <div>
+        <h3>แนวทางแก้ไข</h3>
+        <ul>
+          <li>Hardening checklist</li>
+          <li>Environment-specific configs</li>
+          <li>Automated config scanning</li>
+          <li>Security headers (CSP, HSTS)</li>
+        </ul>
+      </div>
+    </div>
+    <br>
+    <pre class="code-bad"><code class="python"># Bad: DEBUG ใน production
+app.run(debug=True)
+# → stack trace + credentials รั่ว!</code></pre>
+    <pre class="code-good"><code class="python"># Good: env-based config
+app.run(debug=env.get('DEBUG', 'false') == 'true')</code></pre>
+  </section>
+
+  <!-- A03 -->
+  <section>
+    <h2>A03: Software Supply Chain Failures</h2>
+    <p>ใช้ library CI/CD pipeline หรือ dependency ที่ถูก compromise</p>
+    <br>
+    <div class="stat-box">
+      <div class="number">XZ Utils</div>
+      <div class="label">CVE-2024-3094 — backdoor แทรกใน xz/liblzma<br>ใกล้เข้าไปใน production SSH ทั่วโลก</div>
+    </div>
+    <br>
+    <div class="two-col">
+      <div>
+        <h3>ตัวอย่างช่องโหว่</h3>
+        <ul>
+          <li>XZ Utils backdoor</li>
+          <li>Dependency confusion attack</li>
+          <li>SolarWinds supply chain</li>
+          <li>Compromised npm/PyPI packages</li>
+        </ul>
+      </div>
+      <div>
+        <h3>แนวทางแก้ไข</h3>
+        <ul>
+          <li>SBOM generation (Syft)</li>
+          <li>Lock files (package-lock.json)</li>
+          <li>Private registries</li>
+          <li>Verify checksums + signatures</li>
+        </ul>
+      </div>
+    </div>
+    <br>
+    <pre class="code-bad"><code class="bash"># Bad: ไม่ pin version, ไม่ verify
+pip install requests
+npm install lodash</code></pre>
+    <pre class="code-good"><code class="bash"># Good: pin version + verify integrity
+pip install requests==2.31.0 \
+  --hash=sha256:abc123...
+npm ci  # uses lockfile</code></pre>
+  </section>
+
+  <!-- A04 -->
+  <section>
+    <h2>A04: Cryptographic Failures</h2>
     <p>การเข้ารหัสที่ไม่เหมาะสม ไม่มี หรือใช้ algorithm ล้าสมัย</p>
     <br>
     <div class="two-col">
@@ -253,17 +336,18 @@ app.get('/api/user/:id', (req, res) => {
         <h3>ตัวอย่างช่องโหว่</h3>
         <ul>
           <li>เก็บ password เป็น <strong>plain text</strong> หรือ MD5</li>
-          <li>ส่งข้อมูลผ่าน <strong>HTTP</strong> แทน HTTPS</li>
+          <li>TLS 1.0/1.1 ยังใช้อยู่</li>
           <li><strong>Hardcode</strong> encryption key ใน source</li>
+          <li>Weak IV/salt management</li>
         </ul>
       </div>
       <div>
         <h3>แนวทางแก้ไข</h3>
         <ul>
           <li><code>bcrypt</code> / <code>argon2</code> สำหรับ password</li>
-          <li>TLS สำหรับ data in transit</li>
-          <li>AES-256 สำหรับ data at rest</li>
-          <li>ไม่ hardcode keys</li>
+          <li>TLS 1.3 สำหรับ data in transit</li>
+          <li>AES-256-GCM สำหรับ data at rest</li>
+          <li>Key rotation, ไม่ hardcode</li>
         </ul>
       </div>
     </div>
@@ -274,9 +358,9 @@ hash = md5(password)</code></pre>
 hash = bcrypt.hashpw(password, bcrypt.gensalt())</code></pre>
   </section>
 
-  <!-- A03 -->
+  <!-- A05 -->
   <section>
-    <h2>A03: Injection</h2>
+    <h2>A05: Injection</h2>
     <p>ข้อมูล user ถูกนำไป execute โดยตรงโดยไม่ผ่าน sanitize</p>
     <br>
     <h3>SQL Injection</h3>
@@ -292,9 +376,9 @@ document.innerHTML = userInput;
 // Attacker: &lt;script&gt;steal(document.cookie)&lt;/script&gt;</code></pre>
   </section>
 
-  <!-- A03 continued: Command Injection -->
+  <!-- A05 continued: Command Injection -->
   <section>
-    <h2>A03: Injection (cont.)</h2>
+    <h2>A05: Injection (cont.)</h2>
     <h3>Command Injection</h3>
     <pre class="code-bad"><code class="python"># Bad: direct OS command
 os.system('ping ' + user_input)
@@ -309,11 +393,19 @@ subprocess.run(['ping', '-c', '4', validated_host], capture_output=True)</code><
       <li>Output encoding</li>
       <li>ไม่เรียก OS command โดยตรง</li>
     </ul>
+    <br>
+    <h3>XXE (XML External Entities)</h3>
+    <pre class="code-bad"><code class="xml">&lt;!-- Bad: DTD enabled by default --&gt;
+&lt;!DOCTYPE foo [&lt;!ENTITY xxe SYSTEM "file:///etc/passwd"&gt;]&gt;
+&lt;data&gt;&amp;xxe;&lt;/data&gt;</code></pre>
+    <pre class="code-good"><code class="python"># Good: disable DTD processing
+from defusedxml import ElementTree
+tree = ElementTree.parse(untrusted_input)</code></pre>
   </section>
 
-  <!-- A04 -->
+  <!-- A06 -->
   <section>
-    <h2>A04: Insecure Design</h2>
+    <h2>A06: Insecure Design</h2>
     <p>ปัญหาจากการออกแบบที่ไม่ปลอดภัยตั้งแต่แรก<br>ไม่สามารถแก้ได้ด้วย code fix อย่างเดียว</p>
     <br>
     <ul>
@@ -330,48 +422,6 @@ subprocess.run(['ping', '-c', '4', validated_host], capture_output=True)</code><
     </ul>
   </section>
 
-  <!-- A05 -->
-  <section>
-    <h2>A05: Security Misconfiguration</h2>
-    <p>ตั้งค่าไม่ถูกต้อง ปล่อย default settings เปิด features ไม่จำเป็น</p>
-    <br>
-    <ul>
-      <li><code>DEBUG=True</code> ใน production — แสดง stack trace</li>
-      <li>Default credentials: <code>admin/admin</code></li>
-      <li>S3 bucket ตั้งเป็น public โดยไม่ตั้งใจ</li>
-      <li>Directory listing เปิดอยู่บน web server</li>
-    </ul>
-    <br>
-    <h3>แนวทางแก้ไข</h3>
-    <ul>
-      <li>Hardening checklist</li>
-      <li>Environment-specific configs</li>
-      <li>Automated config scanning</li>
-    </ul>
-  </section>
-
-  <!-- A06 -->
-  <section>
-    <h2>A06: Vulnerable & Outdated Components</h2>
-    <p>ใช้ library/framework ที่มีช่องโหว่ที่ทราบแล้ว (known CVEs)</p>
-    <br>
-    <div class="stat-box">
-      <div class="number">Log4Shell</div>
-      <div class="label">CVE-2021-44228 — RCE ใน Log4j<br>ส่งผลกระทบทั่วโลก</div>
-    </div>
-    <br><br>
-    <ul>
-      <li>jQuery เวอร์ชันเก่าที่มี XSS vulnerability</li>
-      <li>ไม่เคย update dependencies มาหลายปี</li>
-    </ul>
-    <br>
-    <h3>แนวทางแก้ไข</h3>
-    <ul>
-      <li>Regular dependency updates</li>
-      <li>ใช้ SCA tools (Syft, Snyk, Dependency-Check)</li>
-      <li>Monitor CVE alerts</li>
-    </ul>
-  </section>
 
   <!-- A07 -->
   <section>
@@ -396,7 +446,7 @@ subprocess.run(['ping', '-c', '4', validated_host], capture_output=True)</code><
 
   <!-- A08 -->
   <section>
-    <h2>A08: Software & Data Integrity Failures</h2>
+    <h2>A08: Software or Data Integrity Failures</h2>
     <p>ไม่ตรวจสอบความถูกต้องของ software updates หรือ CI/CD pipeline</p>
     <br>
     <div class="stat-box">
@@ -419,7 +469,7 @@ subprocess.run(['ping', '-c', '4', validated_host], capture_output=True)</code><
 
   <!-- A09 -->
   <section>
-    <h2>A09: Logging & Monitoring Failures</h2>
+    <h2>A09: Logging and Alerting Failures</h2>
     <p>ไม่มี logging เพียงพอ ตรวจจับ attack ไม่ได้</p>
     <br>
     <ul>
@@ -439,24 +489,41 @@ subprocess.run(['ping', '-c', '4', validated_host], capture_output=True)</code><
 
   <!-- A10 -->
   <section>
-    <h2>A10: Server-Side Request Forgery (SSRF)</h2>
-    <p>Application ทำ HTTP request ไปยัง URL ที่ attacker กำหนด</p>
+    <h2>A10: Mishandling of Exceptional Conditions</h2>
+    <p>การจัดการ errors/exceptions ไม่ดี ทำให้เกิดช่องโหว่ร้ายแรง</p>
     <br>
-    <pre class="code-bad"><code class="python"># Bad: server fetch URL อะไรก็ได้ที่ user ส่งมา
-resp = requests.get(user_provided_url)
-# Attacker: http://169.254.169.254 → AWS metadata/credentials!</code></pre>
+    <div class="two-col">
+      <div>
+        <h3>ตัวอย่างช่องโหว่</h3>
+        <ul>
+          <li><strong>Fail-open</strong> แทน fail-closed</li>
+          <li>Crash DoS จาก unhandled exception</li>
+          <li>Sensitive data ใน error messages</li>
+          <li>Stack trace เปิดเผยใน production</li>
+        </ul>
+      </div>
+      <div>
+        <h3>แนวทางแก้ไข</h3>
+        <ul>
+          <li>Fail-closed by default</li>
+          <li>Global exception handlers</li>
+          <li>Sanitize error messages</li>
+          <li>Log internally, generic message to user</li>
+        </ul>
+      </div>
+    </div>
     <br>
-    <ul>
-      <li>Preview URL feature → attacker เข้าถึง internal resources</li>
-      <li>Webhook ไม่ validate URL</li>
-    </ul>
-    <br>
-    <h3>แนวทางแก้ไข</h3>
-    <ul>
-      <li>Allowlist URLs/domains</li>
-      <li>Block internal IP ranges</li>
-      <li>Network segmentation</li>
-    </ul>
+    <pre class="code-bad"><code class="python"># Bad: fail-open + expose internals
+try:
+    result = db.query(sql)
+except Exception as e:
+    return {"error": str(e)}  # leaks DB schema!</code></pre>
+    <pre class="code-good"><code class="python"># Good: fail-closed + sanitize
+try:
+    result = db.query(sql)
+except DatabaseError:
+    log.exception("Query failed")
+    return {"error": "Service unavailable"}</code></pre>
   </section>
 </section>
 
@@ -1132,7 +1199,7 @@ jobs:
     <br>
     <p>Resources:</p>
     <ul style="font-size:0.8em;">
-      <li>OWASP Top 10 — <span class="highlight-cyan">owasp.org/Top10</span></li>
+      <li>OWASP Top 10 — <span class="highlight-cyan">owasp.org/Top10/2025</span></li>
       <li>Semgrep — <span class="highlight-cyan">semgrep.dev</span></li>
       <li>Syft — <span class="highlight-cyan">github.com/anchore/syft</span></li>
       <li>Dependency-Track — <span class="highlight-cyan">dependencytrack.org</span></li>

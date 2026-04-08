@@ -76,12 +76,13 @@
 
 ---
 
-## Slide 9 (~h.v 6.4): OWASP Top 10 (2021) — Overview
+## Slide 9 (~h.v 6.4): OWASP Top 10 (2025) — Overview
 
 - อธิบายสั้นๆ ว่า OWASP คืออะไร: องค์กร nonprofit ที่จัดอันดับ web security risks
-- อัปเดตทุก 3-4 ปี (ล่าสุด 2021, 2024 กำลังจะออก)
+- อัปเดตทุก 3-4 ปี (ล่าสุด 2025)
 - เน้นว่านี่คือ "common knowledge" ที่ developer ทุกคนควรรู้
 - แยก 3 กลุ่ม: แดง (critical) เหลือง (yellow) ฟ้า (cyan) — ให้เห็นระดับความสำคัญ
+- มีหมวดใหม่ 2 หมวด: A03 Supply Chain Failures และ A10 Exceptional Conditions, SSRF รวมเข้า A01
 
 ---
 
@@ -91,19 +92,30 @@
 - ให้ตัวอย่าง IDOR: "เปลี่ยน URL เลข 1 = เห็นข้อมูลคนอื่น"
 - แสดง code ตัวอย่าง: "ดูบรรทัดนี้ ขาดอะไร?" → authorization check
 - ถ้ามีเวลา: ให้ผู้เรียนคิดตัวอย่างเพิ่ม (เช่น API ของบริษัทที่เคยเจอ)
+- ใน 2025 SSRF ถูกรวมเข้ามาใน A01 เพราะ access control ของ server-side requests
 
 ---
 
-## Slide 11 (~h.v 6.6): A02: Cryptographic Failures
+## Slide 11 (~h.v 6.6): A02: Security Misconfiguration
 
-- MD5 คือตัวอย่าง classic — เคยใช้กัน เดี๋วันใช้ bcrypt
-- อธิบายว่า hash ≠ encrypt: hash ทางเดียว, encrypt ถอดกลับได้ด้วย key
-- เน้น "อย่า hardcode keys ใน source code" — ให้ใช้ env vars หรือ secret manager
-- ตัวอย่างการส่งข้อมูลผ่าน HTTP: อธิบายว่า man-in-the-middle อ่านได้
+- เปลี่ยนจากอันดับ 5 → 2 เพราะ misconfiguration พบได้ง่ายและบ่อยมาก
+- DEBUG=True คือตัวอย่าง classic — เจอบ่อยใน production
+- เพิ่มตัวอย่าง: S3 bucket public, directory listing, missing security headers
+- "hardening checklist = checklist ที่ต้องทำก่อน deploy ทุกครั้ง"
 
 ---
 
-## Slide 9: A03: Injection
+## Slide ~: A03: Software Supply Chain Failures (NEW)
+
+- หมวดใหม่สำคัญมาก — เกิดจากเหตุการณ์ใหญ่ๆ เช่น SolarWinds และ XZ Utils
+- XZ Utils: "คิดเป็น backdoor ใน open source library ที่ใช้ในทุก Linux distro"
+- Dependency confusion: "ชื่อ package เดียวกัน แต่ registry ต่างกัน — internal vs public"
+- เน้นว่า SCA tools (Syft + Dependency-Track) ใน lab คือเครื่องมือป้องกันอย่างหนึ่ง
+- Lock files + private registries + SBOM = defense in depth
+
+---
+
+## Slide ~: A05: Injection
 
 - นี่คือ vulnerability ที่คนรู้จักดีที่สุด — ให้เน้น
 - SQL Injection: พิมพ์ตัวอย่างลงบน whiteboard หรือให้ผู้เรียนลอง: `' OR 1=1 --`
@@ -113,15 +125,16 @@
 
 ---
 
-## Slide 10: A03: Injection (cont.)
+## Slide ~: A05: Injection (cont.)
 
 - แสดงตัวอย่าง Python code ทั้ง bad และ good
 - เน้นว่า `subprocess.run([...])` ใช้ list ไม่ใช่ string — ป้องกัน shell injection
 - "ถ้าจะจำอย่างเดียว จำ parameterized queries"
+- XXE เป็น injection แบบ XML — อ่านไฟล์จาก server ได้ ใช้ defusedxml ป้องกัน
 
 ---
 
-## Slide 14 (~h.v 6.9): A04: Insecure Design
+## Slide ~: A06: Insecure Design
 
 - เน้นว่านี่ต่างจากอันดับอื่น — แก้ด้วย code ไม่ได้ ต้องออกแบบใหม่
 - ตัวอย่าง rate limiting: "ลองนึกว่าถ้าไม่จำกัด login attempt — brute force เล่นเอง"
@@ -130,26 +143,26 @@
 
 ---
 
-## Slide 15 (~h.v 6.10): A05: Security Misconfiguration
+## Slide ~: A04: Cryptographic Failures
 
-- DEBUG=True คือตัวอย่างที่เจอบ่อยมากใน production
-- ให้เล่าเคสจริงที่เคยเจอ: "เคยเจอ stack trace ที่เปิดเผย DB credentials"
-- Default credentials: ย้ำว่าต้องเปลี่ยนเสมอ
-- "hardening checklist = checklist ที่ต้องทำก่อน deploy ทุกครั้ง"
+- เปลี่ยนจากอันดับ 2 → 4
+- MD5 คือตัวอย่าง classic — เคยใช้กัน เดี๋ยวใช้ bcrypt/argon2
+- เพิ่ม: TLS 1.0/1.1 ยังคงพบใน legacy systems
+- เพิ่ม: IV/salt management — "บางครั้ง algorithm ถูกแต่ใช้ผิดวิธี"
+- เน้น "อย่า hardcode keys" → ใช้ env vars หรือ secret manager
 
 ---
 
-## Slide 16 (~h.v 6.11): A06: Vulnerable & Outdated Components
+## Slide ~: (A06 旧 Vulnerable Components → รวมเข้า A03 Supply Chain)
 
-- Log4Shell เป็นตัวอย่างที่ดีที่สุด — impact ทั่วโลก
-- "ถ้าไม่ update dependencies ก็เหมือนมีประตูเปิดไว้ให้ attacker"
-- แนะนำให้ใช้ Dependabot / Renovate อัตโนมัติ update
-- ให้เห็นว่านี่คือเหตุผลที่เรามี Part B: SCA ใน lab
+- Content นี้รวมเข้า A03 Supply Chain Failures แล้ว
+- ยกตัวอย่าง Log4Shell ในบริบท supply chain แทน
 
 ---
 
 ## Slide 17 (~h.v 6.12): A07: Authentication Failures
 
+- เพิ่มชื่อเต็ม: Authentication Failures (ย่อจาก Identification & Authentication)
 - ให้ยกมือถ้าใครในห้องเคยใช้ password '123456'
 - MFA: อธิบายว่าแม้แค่ SMS ก็ดีกว่าไม่มี
 - Session ID ใน URL: อธิบายว่า URL ถูก log ได้, share ได้, browser history เหลือบ
@@ -157,7 +170,7 @@
 
 ---
 
-## Slide 18 (~h.v 6.13): A08: Software & Data Integrity Failures
+## Slide 18 (~h.v 6.13): A08: Software or Data Integrity Failures
 
 - SolarWinds: "supply chain attack ที่ใหญ่ที่สุด — 18,000+ องค์กร"
 - อธิบายว่าไม่ใช่แค่ install library — CI/CD pipeline เองก็โดนเข้าได้
@@ -166,8 +179,9 @@
 
 ---
 
-## Slide 19 (~h.v 6.14): A09: Logging & Monitoring Failures
+## Slide 19 (~h.v 6.14): A09: Logging and Alerting Failures
 
+- เปลี่ยนชื่อเน้น alerting — มี log แต่ไม่มี alert เท่ากับไม่มี
 - "ถ้าไม่ log ก็เหมือนถูกขโมยแล้วไม่รู้"
 - ให้ตัวอย่าง: ถ้า brute force แต่ไม่ log → ไม่รู้จนกว่าโดน
 - เน้น balance: log พอแต่ไม่ log sensitive data (GDPR, privacy)
@@ -175,12 +189,14 @@
 
 ---
 
-## Slide 20 (~h.v 6.15): A10: SSRF
+## Slide ~: A10: Mishandling of Exceptional Conditions (NEW)
 
-- อธิบาย concept: "เว็บของเรา fetch URL ที่ user ส่งมา — ถ้าเขาส่ง internal IP ละ?"
-- AWS metadata: `169.254.169.254` — ดึง credentials ได้เลย
-- "นี่คือเหตุผลที่ต้อง allowlist URL ไม่ใช่ blocklist"
-- ให้เห็นว่า SSRF ทำให้เข้าถึง internal network ทั้งหมด
+- หมวดใหม่ แทน SSRF (ซึ่งย้ายไป A01)
+- "fail-open vs fail-closed" — อธิบายว่า fail-open อันตรายกว่า: "ระบบทำงานต่อแม้ auth ล้มเหลว"
+- Crash DoS: "exception ไม่ handle → ทั้ง server crash → attacker ส่ง request พิเศษซ้ำๆ"
+- Sensitive data in errors: "เคยเห็น stack trace ที่เปิดเผย DB credentials, API keys, file paths"
+- ตัวอย่างจาก lab: `app.py` มี `debug=True` และ verbose error messages
+- "log internally, generic message to user"
 
 ---
 

@@ -53,95 +53,95 @@ Learn to find and fix security vulnerabilities through manual code review and au
 
 ### 1.2 OWASP Top 10 (40 min)
 
-OWASP (Open Worldwide Application Security Project) จัดอันดับ 10 ความเสี่ยงด้านความปลอดภัยที่สำคัญที่สุดสำหรับ web applications (ล่าสุด 2021):
+OWASP (Open Worldwide Application Security Project) จัดอันดับ 10 ความเสี่ยงด้านความปลอดภัยที่สำคัญที่สุดสำหรับ web applications (ล่าสุด 2025):
 
 <details>
 <summary><strong>A01: Broken Access Control</strong></summary>
 
 ผู้ใช้สามารถเข้าถึงข้อมูลหรือ function ที่ไม่ได้รับอนุญาต
-- IDOR, privilege escalation, force browsing
-- Fix: Authorization check ทุก request, RBAC, deny by default
+- IDOR, privilege escalation, force browsing, **SSRF** (รวมจาก A10)
+- Fix: Authorization check ทุก request, RBAC, deny by default, allowlist URLs, block internal IPs
 
 </details>
 
 <details>
-<summary><strong>A02: Cryptographic Failures</strong></summary>
-
-การเข้ารหัสที่ไม่เหมาะสม ไม่มีเลย หรือใช้ algorithm ที่ล้าสมัย
-- Plain text passwords, MD5/SHA1, HTTP ไม่ใช่ HTTPS, hardcoded keys
-- Fix: bcrypt/argon2, TLS, AES-256, ไม่ hardcode
-
-</details>
-
-<details>
-<summary><strong>A03: Injection (SQL, XSS, Command)</strong></summary>
-
-ข้อมูลที่ผู้ใช้ป้อนถูกนำไป execute โดยตรงโดยไม่ผ่านการ sanitize
-- SQL Injection, XSS, Command Injection
-- Fix: Parameterized queries, input validation, output encoding
-
-</details>
-
-<details>
-<summary><strong>A04: Insecure Design</strong></summary>
-
-ปัญหาที่เกิดจากการออกแบบระบบที่ไม่ปลอดภัยตั้งแต่แรก
-- ไม่มี rate limiting, คำถาม security ที่เดาง่าย
-- Fix: Threat modeling, secure design patterns, abuse case testing
-
-</details>
-
-<details>
-<summary><strong>A05: Security Misconfiguration</strong></summary>
+<summary><strong>A02: Security Misconfiguration</strong></summary>
 
 ตั้งค่าระบบไม่ถูกต้อง ปล่อย default settings
-- DEBUG=True in prod, default credentials, public S3 buckets
-- Fix: Hardening checklist, env-specific configs, automated scanning
+- DEBUG=True in prod, default credentials, public S3 buckets, directory listing, missing security headers
+- Fix: Hardening checklist, env-specific configs, automated scanning, security headers (CSP, HSTS)
 
 </details>
 
 <details>
-<summary><strong>A06: Vulnerable & Outdated Components</strong></summary>
+<summary><strong>A03: Software Supply Chain Failures</strong> 🆕</summary>
 
-ใช้ library/framework ที่มีช่องโหว่ที่ทราบแล้ว (known CVEs)
-- Log4Shell (CVE-2021-44228), outdated jQuery
-- Fix: Regular updates, SCA tools, monitor CVEs
+ใช้ library CI/CD pipeline หรือ dependency ที่ถูก compromise
+- XZ Utils backdoor (CVE-2024-3094), dependency confusion, SolarWinds, compromised npm/PyPI packages
+- Fix: SBOM generation (Syft), lock files, private registries, verify checksums, SCA tools (Dependency-Track)
 
 </details>
 
 <details>
-<summary><strong>A07: Identification & Authentication Failures</strong></summary>
+<summary><strong>A04: Cryptographic Failures</strong></summary>
+
+การเข้ารหัสที่ไม่เหมาะสม ไม่มีเลย หรือใช้ algorithm ที่ล้าสมัย
+- Plain text passwords, MD5/SHA1, TLS 1.0/1.1 ยังใช้อยู่, hardcoded keys, weak IV/salt
+- Fix: bcrypt/argon2, TLS 1.3, AES-256-GCM, key rotation, ไม่ hardcode
+
+</details>
+
+<details>
+<summary><strong>A05: Injection (SQL, XSS, Command, XXE)</strong></summary>
+
+ข้อมูลที่ผู้ใช้ป้อนถูกนำไป execute โดยตรงโดยไม่ผ่านการ sanitize
+- SQL Injection, XSS, Command Injection, **XXE (XML External Entities)**
+- Fix: Parameterized queries, input validation, output encoding, disable DTD in XML parsers
+
+</details>
+
+<details>
+<summary><strong>A06: Insecure Design</strong></summary>
+
+ปัญหาที่เกิดจากการออกแบบระบบที่ไม่ปลอดภัยตั้งแต่แรก
+- ไม่มี rate limiting, คำถาม security ที่เดาง่าย, ไม่มี threat modeling
+- Fix: Threat modeling, secure design patterns, abuse case testing, rate limiting
+
+</details>
+
+<details>
+<summary><strong>A07: Authentication Failures</strong></summary>
 
 ระบบ authentication อ่อนแอ
-- Weak passwords, no MFA, session ID in URL
-- Fix: Strong password policy, MFA, secure sessions, rate limiting
+- Weak passwords, no MFA, session ID in URL, credential stuffing, weak session management
+- Fix: Strong password policy, MFA, secure sessions, rate limiting, account lockout
 
 </details>
 
 <details>
-<summary><strong>A08: Software & Data Integrity Failures</strong></summary>
+<summary><strong>A08: Software or Data Integrity Failures</strong></summary>
 
-ไม่ตรวจสอบ integrity ของ software/data
-- SolarWinds attack, untrusted libraries, insecure deserialization
-- Fix: Digital signatures, verify checksums, secure CI/CD
-
-</details>
-
-<details>
-<summary><strong>A09: Security Logging & Monitoring Failures</strong></summary>
-
-ไม่มี logging เพียงพอ
-- ไม่ log failed logins, log sensitive data, ไม่มี alerting
-- Fix: Log security events, centralized logging, alerting, IR plan
+ไม่ตรวจสอบ integrity ของ software หรือ data
+- SolarWinds attack, untrusted libraries, insecure deserialization, unsigned updates
+- Fix: Digital signatures, verify checksums, secure CI/CD, SLSA framework
 
 </details>
 
 <details>
-<summary><strong>A10: Server-Side Request Forgery (SSRF)</strong></summary>
+<summary><strong>A09: Security Logging and Alerting Failures</strong></summary>
 
-App ทำ HTTP request ไปยัง URL ที่ attacker กำหนด
-- URL preview → AWS metadata, webhook ไม่ validate
-- Fix: Allowlist domains, block internal IPs, network segmentation
+ไม่มี logging/alerting เพียงพอ
+- ไม่ log failed logins, log sensitive data, ไม่มี alerting, no centralized logging
+- Fix: Log security events, centralized logging (ELK, Loki), real-time alerting, IR plan
+
+</details>
+
+<details>
+<summary><strong>A10: Mishandling of Exceptional Conditions</strong> 🆕</summary>
+
+การจัดการ errors/exceptions ไม่ดี ทำให้เกิดช่องโหว่
+- Fail-open แทน fail-closed, crash DoS จาก unhandled exception, sensitive data ใน error messages
+- Fix: Fail-closed by default, global exception handlers, sanitize error messages, log internally
 
 </details>
 

@@ -13,20 +13,20 @@
 
 Review `lab/vulnerable-app/app.py` and find as many vulnerabilities as possible:
 
-| # | Vulnerability | Line(s) | Found? |
-|---|--------------|---------|--------|
-| 1 | Hardcoded credentials (DB_PASSWORD, API_KEY) | 14-16 | [ ] |
-| 2 | Weak Flask secret_key | 19 | [ ] |
-| 3 | SQL Injection (get_users) | 28 | [ ] |
-| 4 | SQL Injection (login) | 38 | [ ] |
-| 5 | XSS — user input rendered in HTML | 52 | [ ] |
-| 6 | Command Injection (ping) | 65 | [ ] |
-| 7 | Path Traversal (file read) | 73 | [ ] |
-| 8 | Weak hashing (MD5, no salt) | 87 | [ ] |
-| 9 | Missing authorization (admin endpoints) | 96-106 | [ ] |
-| 10 | Verbose error messages (debug) | 112 | [ ] |
-| 11 | SSRF (fetch arbitrary URL) | 126 | [ ] |
-| 12 | Insecure deserialization (pickle) | 137 | [ ] |
+| # | Vulnerability | Line(s) | OWASP 2025 | Found? |
+|---|--------------|---------|-------------|--------|
+| 1 | Hardcoded credentials (DB_PASSWORD, API_KEY) | 17-20 | A02: Misconfiguration | [ ] |
+| 2 | Weak Flask secret_key | 23 | A02: Misconfiguration | [ ] |
+| 3 | SQL Injection (get_users) | 38-47 | A05: Injection | [ ] |
+| 4 | SQL Injection (login) | 50-66 | A05: Injection | [ ] |
+| 5 | XSS — user input rendered in HTML | 69-83 | A05: Injection | [ ] |
+| 6 | Command Injection (ping) | 87-92 | A05: Injection | [ ] |
+| 7 | Path Traversal (file read) | 95-106 | A01: Broken Access Control | [ ] |
+| 8 | Weak hashing (MD5, no salt) | 109-119 | A04: Cryptographic Failures | [ ] |
+| 9 | Missing authorization (admin endpoints) | 132-151 | A01: Broken Access Control | [ ] |
+| 10 | Verbose error messages (debug) | 154-171 | A10: Exceptional Conditions | [ ] |
+| 11 | SSRF (fetch arbitrary URL) | 174-185 | A01: Broken Access Control | [ ] |
+| 12 | Insecure deserialization (pickle) | 188-198 | A08: Integrity Failures | [ ] |
 
 **Bonus**: Also check `config.js` for hardcoded secrets!
 
