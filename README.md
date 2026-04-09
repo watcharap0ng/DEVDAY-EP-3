@@ -298,7 +298,7 @@ OWASP (Open Worldwide Application Security Project) จัดอันดับ 
 
 ```bash
 # Clone
-git clone https://github.com/Wsangsrichan/DEVDAY-EP-3.git
+git clone https://github.com/watcharap0ng/DEVDAY-EP-3.git
 cd DEVDAY-EP-3
 
 # Open slides
